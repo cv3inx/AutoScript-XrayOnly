@@ -9,7 +9,7 @@ echo -e "———————————————————————�
 echo -e "You have no existing clients!"
 echo -e "————————————————————————"
 read -n 1 -s -r -p "Press any key to back on menu"
-del-xray
+allxray
 fi
 clear
 echo -e "————————————————————————"
@@ -23,7 +23,7 @@ echo -e "tap enter to go back"
 echo -e "————————————————————————"
 read -rp "Input Username : " user
 if [ -z $user ]; then
-del-xray
+allxray
 else
 exp=$(grep -wE "^#&@ $user" "/usr/local/etc/xray/config/04_inbounds.json" | cut -d ' ' -f 3 | sort | uniq)
 sed -i "/^#&@ $user $exp/,/^},{/d" /usr/local/etc/xray/config/04_inbounds.json
