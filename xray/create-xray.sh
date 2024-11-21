@@ -1,31 +1,4 @@
 #!/bin/bash
-get_vps_ip() {
-    curl -s https://ipinfo.io/ip
-}
-
-check_ip_permission() {
-    VPS_IP=$(get_vps_ip)
-    ACCESS_URL="https://raw.githubusercontent.com/SonzaiEkkusu/AutoScript-XrayOnly/main/access"
-
-    echo "Mengecek izin untuk ip $VPS_IP"
-	sleep 2
-	clear
-    ACCESS_LIST=$(curl -s $ACCESS_URL)
-
-    MATCH=$(echo "$ACCESS_LIST" | grep -w "^$VPS_IP")
-
-    if [ -n "$MATCH" ]; then
-        COMMENTS=$(echo "$MATCH" | cut -d'#' -f2-)
-		clear
-    else
-        echo "Sepertinya anda tidak memiliki ijin untuk menggunakan autoscript ini"
-        echo "Silakan hubungi @November2k atau gunakan script asli dari dugong-lewat."
-        exit 1
-    fi
-}
-
-check_ip_permission
-
 # Fungsi untuk menghasilkan string acak
 generate_random_string() {
     cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w "$1" | head -n 1
