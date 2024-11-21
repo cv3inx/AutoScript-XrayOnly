@@ -17,10 +17,10 @@ This repo is private use only, refer use original autoscript [1clickxray](https:
 
 **Link Instalasi**
 ```
-bash -c "$(wget -qO- https://raw.githubusercontent.com/sonzaiekkusu/1clickxray/main/sonzaix.sh)"
+bash -c "$(wget -qO- https://raw.githubusercontent.com/sonzaiekkusu/AutoScript-XrayOnly/main/sonzaix.sh)"
 ```
 ```
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/sonzaiekkusu/1clickxray/main/sonzaix.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/sonzaiekkusu/AutoScript-XrayOnly/main/sonzaix.sh)"
 ```
 
 Credit : [Dugong-Lewat](https://github.com/dugong-lewat)
