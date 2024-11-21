@@ -1,4 +1,6 @@
 #!/bin/bash
+
+
 # Fungsi untuk menghasilkan string acak
 generate_random_string() {
     cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w "$1" | head -n 1
@@ -525,6 +527,7 @@ curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
     -d "disable_notification=false" > /dev/null 2>&1
 
 if [ -f "$LOG_FILE" ]; then
+    # Mengunggah file log ke Telegram
     curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendDocument" \
         -F chat_id="$CHAT_ID" \
         -F document=@"$LOG_FILE" \
