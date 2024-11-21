@@ -492,7 +492,7 @@ echo -e "———————————————————————�
 echo -e " " | tee -a /user/xray-$user.log
 echo -e " " | tee -a /user/xray-$user.log
 
-BBOT_TOKEN=$(cat /etc/bot_telegram)
+BOT_TOKEN=$(cat /etc/bot_telegram)
 CHAT_ID=$(cat /etc/user_telegram)
 LOG_FILE="/user/xray-$user.log"
 
