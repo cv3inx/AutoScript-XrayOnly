@@ -1,8 +1,32 @@
 #!/bin/bash
+get_vps_ip() {
+    curl -s https://ipinfo.io/ip
+}
 
+check_ip_permission() {
+    VPS_IP=$(get_vps_ip)
+    ACCESS_URL="https://raw.githubusercontent.com/SonzaiEkkusu/AutoScript-XrayOnly/main/access"
+
+    echo "Mengecek izin untuk ip $VPS_IP"
+	sleep 2
+	clear
+    ACCESS_LIST=$(curl -s $ACCESS_URL)
+
+    MATCH=$(echo "$ACCESS_LIST" | grep -w "^$VPS_IP")
+
+    if [ -n "$MATCH" ]; then
+        COMMENTS=$(echo "$MATCH" | cut -d'#' -f2-)
+		clear
+    else
+        echo "Sepertinya anda tidak memiliki ijin untuk menggunakan autoscript ini"
+        echo "Silakan hubungi @November2k atau gunakan script asli dari dugong-lewat."
+        exit 1
+    fi
+}
+
+check_ip_permission
 rm -rf install.sh
 clear
-# Warna untuk output (sesuaikan dengan kebutuhan)
 NC='\e[0m'       # No Color (mengatur ulang warna teks ke default)
 DEFBOLD='\e[39;1m' # Default Bold
 RB='\e[31;1m'    # Red Bold
@@ -14,7 +38,7 @@ CB='\e[36;1m'    # Cyan Bold
 WB='\e[37;1m'    # White Bold
 
 secs_to_human() {
-echo -e "${WB}Installation time : $(( ${1} / 3600 )) hours $(( (${1} / 60) % 60 )) minute's $(( ${1} % 60 )) seconds${NC}"
+echo -e "Installation time : $(( ${1} / 3600 )) hours $(( (${1} / 60) % 60 )) minute's $(( ${1} % 60 )) seconds"
 }
 start=$(date +%s)
 
@@ -22,7 +46,7 @@ start=$(date +%s)
 print_msg() {
     COLOR=$1
     MSG=$2
-    echo -e "${COLOR}${MSG}${NC}"
+    echo -e "${COLOR}${MSG}"
 }
 
 # Fungsi untuk memeriksa keberhasilan perintah
@@ -254,7 +278,7 @@ print_msg $YB "Selamat datang! Skrip ini akan memasang dan mengkonfigurasi WireP
 
 print_msg $YB "Instalasi WireProxy"
 rm -rf /usr/local/bin/wireproxy >> /dev/null 2>&1
-wget -q -O /usr/local/bin/wireproxy https://github.com/SonzaiEkkusu/AutoScript-XrayOnly/raw/main/wireproxy
+wget -q -O /usr/local/bin/wireproxy https://github.com/sonzaiekkusu/AutoScript-XrayOnly/raw/main/wireproxy
 chmod +x /usr/local/bin/wireproxy
 check_success "Gagal instalasi WireProxy."
 print_msg $YB "Mengkonfigurasi WireProxy"
@@ -377,8 +401,8 @@ mkdir -p /usr/local/etc/xray/dns >> /dev/null 2>&1
 touch /usr/local/etc/xray/dns/domain
 
 # Set your Cloudflare API credentials
-API_EMAIL="1562apricot@awgarstone.com"
-API_KEY="e9c80c4d538c819701ea0129a2fd75ea599ba"
+API_EMAIL="sonzaixmail@gmail.com"
+API_KEY="bf89200f47f014658c65cef74a3d35449ad3c"
 
 # Set the DNS record details
 TYPE_A="A"
@@ -398,18 +422,18 @@ validate_domain() {
 # Fungsi untuk meminta input domain
 input_domain() {
     while true; do
-        echo -e "${YB}Input Domain${NC}"
+        echo -e "Input Domain"
         echo " "
         read -rp $'\e[33;1mInput domain kamu: \e[0m' -e dns
 
         if [ -z "$dns" ]; then
-            echo -e "${RB}Tidak ada input untuk domain!${NC}"
+            echo -e "Tidak ada input untuk domain!"
         elif ! validate_domain "$dns"; then
-            echo -e "${RB}Format domain tidak valid! Silakan input domain yang valid.${NC}"
+            echo -e "Format domain tidak valid! Silakan input domain yang valid."
         else
             echo "$dns" > /usr/local/etc/xray/dns/domain
             echo "DNS=$dns" > /var/lib/dnsvps.conf
-            echo -e "Domain ${GB}${dns}${NC} berhasil disimpan"
+            echo -e "Domain ${dns} berhasil disimpan"
             break
         fi
     done
@@ -417,21 +441,21 @@ input_domain() {
 
 # Fungsi untuk mendapatkan Zone ID
 get_zone_id() {
-  echo -e "${YB}Getting Zone ID...${NC}"
+  echo -e "Getting Zone ID..."
   ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$DOMAIN" \
     -H "X-Auth-Email: $API_EMAIL" \
     -H "X-Auth-Key: $API_KEY" \
     -H "Content-Type: application/json" | jq -r '.result[0].id')
 
   if [ "$ZONE_ID" == "null" ]; then
-    echo -e "${RB}Gagal mendapatkan Zone ID${NC}"
+    echo -e "Gagal mendapatkan Zone ID"
     exit 1
   fi
 
   # Menyensor Zone ID (hanya menampilkan 3 karakter pertama dan terakhir)
-  ZONE_ID_SENSORED="${GB}${ZONE_ID:0:3}*****${ZONE_ID: -3}"
+  ZONE_ID_SENSORED="${ZONE_ID:0:3}*****${ZONE_ID: -3}"
 
-  echo -e "${YB}Zone ID: $ZONE_ID_SENSORED${NC}"
+  echo -e "Zone ID: $ZONE_ID_SENSORED"
 }
 
 # Fungsi untuk menangani respon API
@@ -441,11 +465,11 @@ handle_response() {
 
   success=$(echo $response | jq -r '.success')
   if [ "$success" == "true" ]; then
-    echo -e "$action ${YB}berhasil.${NC}"
+    echo -e "$action berhasil."
   else
-    echo -e "$action ${RB}gagal.${NC}"
+    echo -e "$action gagal."
     errors=$(echo $response | jq -r '.errors[] | .message')
-    echo -e "${RB}Kesalahan: $errors${NC}"
+    echo -e "Kesalahan: $errors"
   fi
 }
 
@@ -461,18 +485,18 @@ delete_record() {
     -H "Content-Type: application/json" | jq -r '.result[0].id')
 
   if [ "$RECORD_ID" != "null" ]; then
-    echo -e "${YB}Menghapus record $record_type yang ada: ${CB}$record_name${NC} ${YB}.....${NC}"
+    echo -e "Menghapus record $record_type yang ada: $record_name ....."
     response=$(curl -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$zone_id/dns_records/$RECORD_ID" \
       -H "X-Auth-Email: $API_EMAIL" \
       -H "X-Auth-Key: $API_KEY" \
       -H "Content-Type: application/json")
-    handle_response "$response" "${YB}Menghapus record $record_type:${NC} ${CB}$record_name${NC}"
+    handle_response "$response" "Menghapus record $record_type: $record_name"
   fi
 }
 
 # Fungsi untuk menghapus DNS record berdasarkan alamat IP
 delete_records_based_on_ip() {
-  echo -e "${YB}Menghapus DNS records berdasarkan alamat IP: ${CB}$IP_ADDRESS${NC} ${YB}.....${NC}"
+  echo -e "Menghapus DNS records berdasarkan alamat IP: $IP_ADDRESS ....."
 
   # Mendapatkan semua DNS record untuk zona tersebut
   dns_records=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
@@ -495,7 +519,7 @@ delete_records_based_on_ip() {
 
 # Fungsi untuk menambah A record
 create_A_record() {
-  echo -e "${YB}Menambah A record $GB$NAME_A$NC $YB.....${NC}"
+  echo -e "Menambah A record $GB$NAME_A$NC $YB....."
   response=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
     -H "X-Auth-Email: $API_EMAIL" \
     -H "X-Auth-Key: $API_KEY" \
@@ -509,12 +533,12 @@ create_A_record() {
     }')
   echo "$NAME_A" > /usr/local/etc/xray/dns/domain
   echo "DNS=$NAME_A" > /var/lib/dnsvps.conf
-  handle_response "$response" "${YB}Menambah A record $GB$NAME_A$NC"
+  handle_response "$response" "Menambah A record $GB$NAME_A$NC"
 }
 
 # Fungsi untuk menambah CNAME record
 create_CNAME_record() {
-  echo -e "${YB}Menambah CNAME record untuk wildcard $GB$NAME_CNAME$NC $YB.....${NC}"
+  echo -e "Menambah CNAME record untuk wildcard $GB$NAME_CNAME$NC $YB....."
   response=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
     -H "X-Auth-Email: $API_EMAIL" \
     -H "X-Auth-Key: $API_KEY" \
@@ -526,7 +550,7 @@ create_CNAME_record() {
       "ttl": 0,
       "proxied": false
     }')
-  handle_response "$response" "${YB}Menambah CNAME record untuk wildcard $GB$NAME_CNAME$NC"
+  handle_response "$response" "Menambah CNAME record untuk wildcard $GB$NAME_CNAME$NC"
 }
 
 # Fungsi untuk memeriksa apakah DNS record sudah ada
@@ -550,14 +574,14 @@ check_dns_record() {
 install_acme_sh() {
     domain=$(cat /usr/local/etc/xray/dns/domain)
     rm -rf ~/.acme.sh/*_ecc >> /dev/null 2>&1
-    export CF_Email="1562apricot@awgarstone.com"
-    export CF_Key="e9c80c4d538c819701ea0129a2fd75ea599ba"
+    export CF_Email="sonzaixmail@gmail.com"
+    export CF_Key="bf89200f47f014658c65cef74a3d35449ad3c"
     curl https://get.acme.sh | sh
     source ~/.bashrc
     ~/.acme.sh/acme.sh --register-account -m $(echo $RANDOM | md5sum | head -c 6; echo;)@gmail.com --server letsencrypt
     ~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --listen-v6 --server letsencrypt --keylength ec-256 --fullchain-file /usr/local/etc/xray/fullchain.cer --key-file /usr/local/etc/xray/private.key --reloadcmd "systemctl restart nginx" --force
     chmod 745 /usr/local/etc/xray/private.key
-    echo -e "${YB}Sertifikat SSL berhasil dipasang!${NC}"
+    echo -e "Sertifikat SSL berhasil dipasang!"
 }
 
 install_acme_sh2() {
@@ -568,7 +592,7 @@ install_acme_sh2() {
     ~/.acme.sh/acme.sh --register-account -m $(echo $RANDOM | md5sum | head -c 6; echo;)@gmail.com --server letsencrypt
     ~/.acme.sh/acme.sh --issue -d $domain --standalone --listen-v6 --server letsencrypt --keylength ec-256 --fullchain-file /usr/local/etc/xray/fullchain.cer --key-file /usr/local/etc/xray/private.key --reloadcmd "systemctl restart nginx" --force
     chmod 745 /usr/local/etc/xray/private.key
-    echo -e "${YB}Sertifikat SSL berhasil dipasang!${NC}"
+    echo -e "Sertifikat SSL berhasil dipasang!"
 }
 
 # Fungsi untuk menampilkan menu utama
@@ -577,14 +601,14 @@ setup_domain() {
         clear
 
         # Menampilkan judul
-        echo -e "${BB}————————————————————————————————————————————————————————"
-        echo -e "${YB}                      SETUP DOMAIN"
-        echo -e "${BB}————————————————————————————————————————————————————————"
+        echo -e "—————————————"
+        echo -e "SETUP DOMAIN"
+        echo -e "—————————————"
 
         # Menampilkan pilihan untuk menggunakan domain acak atau domain sendiri
-        echo -e "${YB}Pilih Opsi:"
-        echo -e "${WB}1. Gunakan domain yang tersedia"
-        echo -e "${WB}2. Gunakan domain sendiri"
+        echo -e "Pilih Opsi:"
+        echo -e "1. Gunakan domain yang tersedia"
+        echo -e "2. Gunakan domain sendiri"
 
         # Meminta input dari pengguna untuk memilih opsi
         read -rp $'\e[33;1mMasukkan pilihan Anda: \e[0m' choice
@@ -593,39 +617,35 @@ setup_domain() {
         case $choice in
             1)
                 while true; do
-                    echo -e "${YB}Pilih Domain anda:"
-                    echo -e "${WB}1. vless.sbs"
-                    echo -e "${WB}2. airi.buzz"
-                    echo -e "${WB}3. balrog.cfd${NC}"
+                    echo -e "Pilih Domain anda:"
+                    echo -e "1. recycle.us.kg"
+                    echo -e "2. xlab.biz.id"
                     echo -e " "
-                    echo -e "${GB}4. kembali${NC}"
+                    echo -e "3. kembali"
                     read -rp $'\e[33;1mMasukkan pilihan Anda: \e[0m' domain_choice
                     case $domain_choice in
                         1)
-                            DOMAIN="vless.sbs"
+                            DOMAIN="recycle.us.kg"
                             ;;
                         2)
-                            DOMAIN="airi.buzz"
+                            DOMAIN="xlab.biz.id"
                             ;;
                         3)
-                            DOMAIN="balrog.cfd"
-                            ;;
-                        4)
                             break
                             ;;
                         *)
-                            echo -e "${RB}Pilihan tidak valid!${NC}"
+                            echo -e "Pilihan tidak valid!"
                             sleep 2
                             continue
                             ;;
                     esac
 
                     while true; do
-                        echo -e "${YB}Pilih opsi untuk nama DNS:"
-                        echo -e "${WB}1. Buat nama DNS secara acak"
-                        echo -e "${WB}2. Buat nama DNS sendiri${NC}"
+                        echo -e "Pilih opsi untuk nama DNS:"
+                        echo -e "1. Buat nama DNS secara acak"
+                        echo -e "2. Buat nama DNS sendiri"
                         echo -e " "
-                        echo -e "${GB}3. Kembali${NC}"
+                        echo -e "3. Kembali"
                         read -rp $'\e[33;1mMasukkan pilihan Anda: \e[0m' dns_name_choice
                         case $dns_name_choice in
                             1)
@@ -643,12 +663,12 @@ setup_domain() {
                                 while true; do
                                     read -rp $'\e[33;1mMasukkan nama DNS Anda (hanya huruf kecil dan angka, tanpa spasi): \e[0m' custom_dns_name
                                     if [[ ! "$custom_dns_name" =~ ^[a-z0-9-]+$ ]]; then
-                                        echo -e "${RB}Nama DNS hanya boleh mengandung huruf kecil dan angka, tanpa spasi!${NC}"
+                                        echo -e "Nama DNS hanya boleh mengandung huruf kecil dan angka, tanpa spasi!"
                                         sleep 2
                                         continue
                                     fi
                                     if [ -z "$custom_dns_name" ]; then
-                                        echo -e "${RB}Nama DNS tidak boleh kosong!${NC}"
+                                        echo -e "Nama DNS tidak boleh kosong!"
                                         sleep 2
                                         continue
                                     fi
@@ -658,7 +678,7 @@ setup_domain() {
 
                                     get_zone_id
                                     if check_dns_record "$NAME_A" "$ZONE_ID"; then
-                                        echo -e "${RB}Nama DNS sudah ada! Silakan coba lagi.${NC}"
+                                        echo -e "Nama DNS sudah ada! Silakan coba lagi."
                                         sleep 2
                                     else
                                         # get_zone_id
@@ -674,7 +694,7 @@ setup_domain() {
                                 break
                                 ;;
                             *)
-                                echo -e "${RB}Pilihan tidak valid!${NC}"
+                                echo -e "Pilihan tidak valid!"
                                 sleep 2
                                 ;;
                         esac
@@ -687,7 +707,7 @@ setup_domain() {
                 break
                 ;;
             *)
-                echo -e "${RB}Pilihan tidak valid!${NC}"
+                echo -e "Pilihan tidak valid!"
                 sleep 2
                 ;;
         esac
@@ -703,7 +723,7 @@ setup_domain() {
 # Menjalankan menu utama
 setup_domain
 
-echo -e "${GB}[ INFO ]${NC} ${YB}Setup Nginx & Xray Config${NC}"
+echo -e "[ INFO ] Setup Nginx & Xray Config"
 # Menghasilkan UUID
 uuid=$(cat /proc/sys/kernel/random/uuid)
 
@@ -718,7 +738,7 @@ echo "$serverpsk" > /usr/local/etc/xray/serverpsk
 
 # Konfigurasi Xray-core
 print_msg $YB "Mengonfigurasi Xray-core..."
-XRAY_CONFIG=raw.githubusercontent.com/SonzaiEkkusu/AutoScript-XrayOnly/main/config
+XRAY_CONFIG=raw.githubusercontent.com/sonzaiekkusu/AutoScript-XrayOnly/main/config
 wget -q -O /usr/local/etc/xray/config/00_log.json "https://${XRAY_CONFIG}/00_log.json"
 wget -q -O /usr/local/etc/xray/config/01_api.json "https://${XRAY_CONFIG}/01_api.json"
 wget -q -O /usr/local/etc/xray/config/02_dns.json "https://${XRAY_CONFIG}/02_dns.json"
@@ -775,16 +795,6 @@ cat > /usr/local/etc/xray/config/04_inbounds.json << END
             "dest": "@trojan-ws",
             "xver": 2
           },
-          {
-            "path": "/ss-ws",
-            "dest": 1000,
-            "xver": 2
-          },
-          {
-            "path": "/ss22-ws",
-            "dest": 1100,
-            "xver": 2
-          },
           // HTTPupgrade
           {
             "path": "/vless-hup",
@@ -799,16 +809,6 @@ cat > /usr/local/etc/xray/config/04_inbounds.json << END
           {
             "path": "/trojan-hup",
             "dest": "@tr-hup",
-            "xver": 2
-          },
-          {
-            "path": "/ss-hup",
-            "dest": "3010",
-            "xver": 2
-          },
-          {
-            "path": "/ss22-hup",
-            "dest": "3100",
             "xver": 2
           }
         ]
@@ -966,71 +966,6 @@ cat > /usr/local/etc/xray/config/04_inbounds.json << END
       },
       "tag": "in-05"
     },
-# SS WS
-    {
-      "listen": "127.0.0.1",
-      "port": 1000,
-      "protocol": "shadowsocks",
-      "settings": {
-        "clients": [
-            {
-              "method": "aes-256-gcm",
-              "password": "$pwss"
-#ss
-            }
-          ],
-        "network": "tcp,udp"
-      },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls"
-        ],
-        "enabled": true
-      },
-      "streamSettings": {
-        "wsSettings": {
-          "acceptProxyProtocol": true,
-          "path": "/ss-ws"
-        },
-        "network": "ws",
-        "security": "none"
-      },
-      "tag": "in-06"
-    },
-# SS2022 WS
-    {
-      "listen": "127.0.0.1",
-      "port": 1100,
-      "protocol": "shadowsocks",
-      "settings": {
-        "method": "2022-blake3-aes-256-gcm",
-        "password": "$(cat /usr/local/etc/xray/serverpsk)",
-        "clients": [
-          {
-            "password": "$userpsk"
-#ss22
-          }
-        ],
-        "network": "tcp,udp"
-      },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls"
-        ],
-        "enabled": true
-      },
-      "streamSettings": {
-        "wsSettings": {
-          "acceptProxyProtocol": true,
-          "path": "/ss22-ws"
-        },
-        "network": "ws",
-        "security": "none"
-      },
-      "tag": "in-07"
-    },
 # VLESS HTTPupgrade
     {
       "listen": "@vl-hup",
@@ -1121,71 +1056,6 @@ cat > /usr/local/etc/xray/config/04_inbounds.json << END
         "enabled": true
       },
       "tag": "in-10"
-    },
-# SS HTTPupgrade
-    {
-      "listen": "127.0.0.1",
-      "port": "3010",
-      "protocol": "shadowsocks",
-      "settings": {
-        "clients": [
-            {
-              "method": "aes-256-gcm",
-              "password": "$pwss"
-#ss
-            }
-          ],
-        "network": "tcp,udp"
-      },
-      "streamSettings": {
-        "httpupgradeSettings": {
-          "acceptProxyProtocol": true,
-          "path": "/ss-hup"
-        },
-        "network": "httpupgrade",
-        "security": "none"
-      },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls"
-        ],
-        "enabled": true
-      },
-      "tag": "in-11"
-    },
-# SS2022 HTTPupgrade
-    {
-      "listen": "127.0.0.1",
-      "port": "3100",
-      "protocol": "shadowsocks",
-      "settings": {
-        "method": "2022-blake3-aes-256-gcm",
-        "password": "$(cat /usr/local/etc/xray/serverpsk)",
-        "clients": [
-          {
-            "password": "$userpsk"
-#ss22
-          }
-        ],
-        "network": "tcp,udp"
-      },
-      "streamSettings": {
-        "httpupgradeSettings": {
-          "acceptProxyProtocol": true,
-          "path": "/ss22-hup"
-        },
-        "network": "httpupgrade",
-        "security": "none"
-      },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls"
-        ],
-        "enabled": true
-      },
-      "tag": "in-12"
     },
 # VLESS gRPC
     {
@@ -1298,79 +1168,6 @@ cat > /usr/local/etc/xray/config/04_inbounds.json << END
       },
       "tag": "in-15"
     },
-# SS gRPC
-    {
-      "listen": "127.0.0.1",
-      "port": 5300,
-      "protocol": "shadowsocks",
-      "settings": {
-        "clients": [
-            {
-              "method": "aes-256-gcm",
-              "password": "$pwss"
-#ss
-            }
-          ],
-        "network": "tcp,udp"
-      },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls"
-        ],
-        "enabled": true
-      },
-      "streamSettings": {
-        "grpcSettings": {
-          "multiMode": true,
-          "serviceName": "ss-grpc",
-          "alpn": [
-            "h2",
-            "http/1.1"
-          ]
-        },
-        "network": "grpc",
-        "security": "none"
-      },
-      "tag": "in-16"
-    },
-# SS2022 gRPC
-    {
-      "listen": "127.0.0.1",
-      "port": 5400,
-      "protocol": "shadowsocks",
-      "settings": {
-        "method": "2022-blake3-aes-256-gcm",
-        "password": "$(cat /usr/local/etc/xray/serverpsk)",
-        "clients": [
-          {
-            "password": "$userpsk"
-#ss22
-          }
-        ],
-        "network": "tcp,udp"
-      },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls"
-        ],
-        "enabled": true
-      },
-      "streamSettings": {
-        "grpcSettings": {
-          "multiMode": true,
-          "serviceName": "ss22-grpc",
-          "alpn": [
-            "h2",
-            "http/1.1"
-          ]
-        },
-        "network": "grpc",
-        "security": "none"
-      },
-      "tag": "in-17"
-    },
     {
       "port": 80,
       "protocol": "vless",
@@ -1425,16 +1222,6 @@ cat > /usr/local/etc/xray/config/04_inbounds.json << END
             "path": "/trojan-hup",
             "dest": "@trojan-hup",
             "xver": 2
-          },
-          {
-            "path": "/ss-hup",
-            "dest": "4000",
-            "xver": 2
-          },
-          {
-            "path": "/ss22-hup",
-            "dest": "4100",
-            "xver": 2
           }
         ],
         "decryption": "none"
@@ -1477,71 +1264,6 @@ cat > /usr/local/etc/xray/config/04_inbounds.json << END
       },
       "tag": "in-19"
     },
-# SS WS
-    {
-      "listen": "127.0.0.1",
-      "port": 2000,
-      "protocol": "shadowsocks",
-      "settings": {
-        "clients": [
-            {
-              "method": "aes-256-gcm",
-              "password": "$pwss"
-#ss
-            }
-          ],
-        "network": "tcp,udp"
-      },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls"
-        ],
-        "enabled": true
-      },
-      "streamSettings": {
-        "wsSettings": {
-          "acceptProxyProtocol": true,
-          "path": "/ss-ws"
-        },
-        "network": "ws",
-        "security": "none"
-      },
-      "tag": "in-20"
-    },
-# SS2022 WS
-    {
-      "listen": "127.0.0.1",
-      "port": 2100,
-      "protocol": "shadowsocks",
-      "settings": {
-        "method": "2022-blake3-aes-256-gcm",
-        "password": "$(cat /usr/local/etc/xray/serverpsk)",
-        "clients": [
-          {
-            "password": "$userpsk"
-#ss22
-          }
-        ],
-        "network": "tcp,udp"
-      },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls"
-        ],
-        "enabled": true
-      },
-      "streamSettings": {
-        "wsSettings": {
-          "acceptProxyProtocol": true,
-          "path": "/ss22-ws"
-        },
-        "network": "ws",
-        "security": "none"
-      },
-      "tag": "in-21"
-    },
 # TROJAN HTTPupgrade
     {
       "listen": "@trojan-hup",
@@ -1570,71 +1292,6 @@ cat > /usr/local/etc/xray/config/04_inbounds.json << END
         "enabled": true
       },
       "tag": "in-22"
-    },
-# SS HTTPupgrade
-    {
-      "listen": "127.0.0.1",
-      "port": 4000,
-      "protocol": "shadowsocks",
-      "settings": {
-        "clients": [
-            {
-              "method": "aes-256-gcm",
-              "password": "$pwss"
-#ss
-            }
-          ],
-        "network": "tcp,udp"
-      },
-      "streamSettings": {
-        "httpupgradeSettings": {
-          "acceptProxyProtocol": true,
-          "path": "/ss-hup"
-        },
-        "network": "httpupgrade",
-        "security": "none"
-      },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls"
-        ],
-        "enabled": true
-      },
-      "tag": "in-23"
-    },
-# SS2022 HTTPupgrade
-    {
-      "listen": "127.0.0.1",
-      "port": "4100",
-      "protocol": "shadowsocks",
-      "settings": {
-        "method": "2022-blake3-aes-256-gcm",
-        "password": "$(cat /usr/local/etc/xray/serverpsk)",
-        "clients": [
-          {
-            "password": "$userpsk"
-#ss22
-          }
-        ],
-        "network": "tcp,udp"
-      },
-      "streamSettings": {
-        "httpupgradeSettings": {
-          "acceptProxyProtocol": true,
-          "path": "/ss22-hup"
-        },
-        "network": "httpupgrade",
-        "security": "none"
-      },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls"
-        ],
-        "enabled": true
-      },
-      "tag": "in-24"
     }
   ]
 }
@@ -1654,8 +1311,8 @@ sleep 1.5
 
 # Konfigurasi Nginx
 print_msg $YB "Mengonfigurasi Nginx..."
-wget -q -O /var/www/html/index.html https://raw.githubusercontent.com/SonzaiEkkusu/AutoScript-XrayOnly/main/index.html
-wget -q -O /etc/nginx/nginx.conf https://raw.githubusercontent.com/SonzaiEkkusu/AutoScript-XrayOnly/main/nginx.conf
+wget -q -O /var/www/html/index.html https://raw.githubusercontent.com/sonzaiekkusu/AutoScript-XrayOnly/main/index.html
+wget -q -O /etc/nginx/nginx.conf https://raw.githubusercontent.com/sonzaiekkusu/AutoScript-XrayOnly/main/nginx.conf
 domain=$(cat /usr/local/etc/xray/dns/domain)
 sed -i "s/server_name web.com;/server_name $domain;/g" /etc/nginx/nginx.conf
 sed -i "s/server_name \*.web.com;/server_name \*.$domain;/" /etc/nginx/nginx.conf
@@ -1664,7 +1321,7 @@ print_msg $GB "Konfigurasi Xray-core dan Nginx berhasil."
 sleep 3
 systemctl restart nginx
 systemctl restart xray
-echo -e "${GB}[ INFO ]${NC} ${YB}Setup Done${NC}"
+echo -e "[ INFO ] Setup Done"
 sleep 3
 clear
 
@@ -1675,8 +1332,8 @@ sudo iptables -A INPUT -p tcp --dport 6881:6889 -j DROP
 sudo iptables -A INPUT -p tcp --dport 6881:6889 -m string --algo bm --string "BitTorrent" -j DROP
 sudo iptables -A INPUT -p udp --dport 6881:6889 -m string --algo bm --string "BitTorrent" -j DROP
 cd /usr/bin
-GITHUB=raw.githubusercontent.com/SonzaiEkkusu/AutoScript-XrayOnly/main/
-echo -e "${GB}[ INFO ]${NC} ${YB}Mengunduh menu utama...${NC}"
+GITHUB=raw.githubusercontent.com/sonzaiekkusu/AutoScript-XrayOnly/main/
+echo -e "[ INFO ] Mengunduh menu utama..."
 wget -q -O menu "https://${GITHUB}/menu/menu.sh"
 wget -q -O allxray "https://${GITHUB}/menu/allxray.sh"
 wget -q -O del-xray "https://${GITHUB}/xray/del-xray.sh"
@@ -1689,7 +1346,7 @@ wget -q -O traffic.py "https://${GITHUB}/traffic.py"
 sleep 0.5
 sleep 0.5
 
-echo -e "${GB}[ INFO ]${NC} ${YB}Mengunduh menu lainnya...${NC}"
+echo -e "[ INFO ] Mengunduh menu lainnya..."
 wget -q -O xp "https://${GITHUB}/other/xp.sh"
 wget -q -O dns "https://${GITHUB}/other/dns.sh"
 wget -q -O certxray "https://${GITHUB}/other/certxray.sh"
@@ -1697,10 +1354,12 @@ wget -q -O about "https://${GITHUB}/other/about.sh"
 wget -q -O clear-log "https://${GITHUB}/other/clear-log.sh"
 wget -q -O log-xray "https://${GITHUB}/other/log-xray.sh"
 wget -q -O update-xray "https://${GITHUB}/other/update-xray.sh"
+wget -q -O update-menu "https://${GITHUB}/other/updatemenu.sh"
+wget -q -O bot-notif "https://${GITHUB}/other/bot-notif.sh"
 
-echo -e "${GB}[ INFO ]${NC} ${YB}Memberikan izin eksekusi pada skrip...${NC}"
-chmod +x del-xray extend-xray create-xray cek-xray log-xray menu allxray xp dns certxray about clear-log update-xray route-xray
-echo -e "${GB}[ INFO ]${NC} ${YB}Persiapan Selesai.${NC}"
+echo -e "[ INFO ] Memberikan izin eksekusi pada skrip..."
+chmod +x bot-notif update-menu del-xray extend-xray create-xray cek-xray log-xray menu allxray xp dns certxray about clear-log update-xray route-xray
+echo -e "[ INFO ] Persiapan Selesai."
 sleep 3
 cd
 echo "0 0 * * * root xp" >> /etc/crontab
@@ -1708,29 +1367,29 @@ echo "*/3 * * * * root clear-log" >> /etc/crontab
 systemctl restart cron
 clear
 echo ""
-echo -e "${BB}—————————————————————————————————————————————————————————${NC}"
-echo -e "                  ${WB}XRAY SCRIPT MOD BY SONZAIX${NC}"
-echo -e "${BB}—————————————————————————————————————————————————————————${NC}"
-echo -e "                 ${WB}»»» Protocol Service «««${NC}  "
-echo -e "${BB}—————————————————————————————————————————————————————————${NC}"
-echo -e "${YB}Vmess Websocket${NC}     : ${YB}443 & 80${NC}"
-echo -e "${YB}Vmess HTTPupgrade${NC}   : ${YB}443 & 80${NC}"
-echo -e "${YB}Vmess gRPC${NC}          : ${YB}443${NC}"
+echo -e "—————————————————————————————"
+echo -e "    XRAY SCRIPT BY DUGONG"
+echo -e "—————————————————————————————"
+echo -e " »»» Protocol Service «««  "
+echo -e "—————————————————————————————"
+echo -e "Vmess Websocket     : 443 & 80"
+echo -e "Vmess HTTPupgrade   : 443 & 80"
+echo -e "Vmess gRPC          : 443"
 echo ""
-echo -e "${YB}Vless XTLS-Vision${NC}   : ${YB}443${NC}"
-echo -e "${YB}Vless Websocket${NC}     : ${YB}443 & 80${NC}"
-echo -e "${YB}Vless HTTPupgrade${NC}   : ${YB}443 & 80${NC}"
-echo -e "${YB}Vless gRPC${NC}          : ${YB}443${NC}"
+echo -e "Vless XTLS-Vision   : 443"
+echo -e "Vless Websocket     : 443 & 80"
+echo -e "Vless HTTPupgrade   : 443 & 80"
+echo -e "Vless gRPC          : 443"
 echo ""
-echo -e "${YB}Trojan TCP TLS${NC}      : ${YB}443${NC}"
-echo -e "${YB}Trojan Websocket${NC}    : ${YB}443 & 80${NC}"
-echo -e "${YB}Trojan HTTPupgrade${NC}  : ${YB}443 & 80${NC}"
-echo -e "${YB}Trojan gRPC${NC}         : ${YB}443${NC}"
-echo -e "${BB}————————————————————————————————————————————————————————${NC}"
+echo -e "Trojan TCP TLS      : 443"
+echo -e "Trojan Websocket    : 443 & 80"
+echo -e "Trojan HTTPupgrade  : 443 & 80"
+echo -e "Trojan gRPC         : 443"
+echo -e "————————————————————————————"
 echo ""
 rm -f install.sh
 secs_to_human "$(($(date +%s) - ${start}))"
-echo -e "${YB}[ WARNING ] reboot now ? (Y/N)${NC} "
+echo -e "[ WARNING ] reboot now ? (Y/N) "
 read answer
 if [ "$answer" == "${answer#[Yy]}" ] ;then
 exit 0
